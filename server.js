@@ -1,48 +1,45 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const models = require("./models");
 const port = 8080;
 
 app.use(express.json());
 app.use(cors());
 
 app.get("/products", (req, res) => {
-  const query = req.query;
-  console.log(query);
-
-  res.send({
-    products: [
-      {
-        id: 1,
-        name: "농구공",
-        price: 10000,
-        seller: "Jordan",
-        imageUrl: "images/products/basketball1.jpeg",
-      },
-      {
-        id: 2,
-        name: "축구공",
-        price: 50000,
-        seller: "Jordan",
-        imageUrl: "images/products/soccerball1.jpg",
-      },
-      {
-        id: 3,
-        name: "키보드",
-        price: 15000,
-        seller: "Grab",
-        imageUrl: "images/products/keyboard1.jpg",
-      },
-    ],
-  });
+  models.Product.findAll()
+    .then((result) => {
+      console.log(result);
+      res.send(result);
+    })
+    .catch((err) => {
+      console.log(err);
+      res.send("상품 목록을 불러오는데 실패했습니다.");
+    });
 });
 
 app.post("/products", (req, res) => {
   const body = req.body;
-  res.send({
-    body,
-  });
-  res.send("POST");
+  const { name, description, price, seller } = body;
+  if (!name || !description || !price || !seller) {
+    res.send("잘못된 요청입니다.");
+    return;
+  }
+  models.Product.create({
+    name,
+    description,
+    price,
+    seller,
+  })
+    .then((result) => {
+      console.log(result);
+      res.send({ result });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.send("상품업로드에 문제가 있습니다.");
+    });
 });
 
 app.get("/products/:id", (req, res) => {
@@ -52,4 +49,14 @@ app.get("/products/:id", (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}/`);
+  models.sequelize
+    .sync()
+    .then(() => {
+      console.log("Database connected");
+    })
+    .catch((err) => {
+      console.log(err);
+      console.log("Database connection failed");
+      process.exit();
+    });
 });
